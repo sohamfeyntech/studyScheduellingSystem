@@ -22,34 +22,51 @@ function displayVideos(videos) {
     }
 
     container.innerHTML = '';  // Clear previous results
+    container.style.display = 'flex';
+    container.style.flexWrap = 'wrap';
+    container.style.justifyContent = 'space-around';
+    container.style.gap = '20px';
 
     videos.forEach(video => {
-        if (!video) return;  // Skip if no video data
-
-        const listItem = document.createElement('li');
-        listItem.style.marginBottom = '10px';
-        listItem.style.alignItems = 'center';
-        listItem.style.display = 'flex';
+        const card = document.createElement('div');
+        card.classList.add('video-card');
 
         const thumbnail = document.createElement('img');
-        thumbnail.src = video.snippet.thumbnails.default.url;
+        thumbnail.src = video.snippet.thumbnails.high.url;
         thumbnail.alt = 'Video Thumbnail';
-        thumbnail.style.width = '120px';
-        thumbnail.style.height = '90px';
-        thumbnail.style.marginRight = '10px';
+        thumbnail.style.width = '100%';
+        thumbnail.style.borderTopLeftRadius = '8px';
+        thumbnail.style.borderTopRightRadius = '8px';
 
-        const videoLink = document.createElement('a');
-        videoLink.href = `https://www.youtube.com/watch?v=${video.id.videoId}`;
-        videoLink.textContent = video.snippet.title;
-        videoLink.target = '_blank';
-        videoLink.style.textDecoration = 'none';
-        videoLink.style.color = '#333';
+        const title = document.createElement('h3');
+        title.textContent = video.snippet.title;
+        title.style.padding = '10px';
 
-        listItem.appendChild(thumbnail);
-        listItem.appendChild(videoLink);
-        container.appendChild(listItem);
+        const description = document.createElement('p');
+        description.textContent = video.snippet.description.substring(0, 100) + '...'; // Limit description length
+        description.style.padding = '0 10px 10px';
+
+        const link = document.createElement('a');
+        link.href = `https://www.youtube.com/watch?v=${video.id.videoId}`;
+        link.textContent = 'Watch';
+        link.target = '_blank';
+        link.style.display = 'inline-block';
+        link.style.padding = '10px 20px';
+        link.style.margin = '0 10px 10px';
+        link.style.background = '#4285F4';
+        link.style.color = 'white';
+        link.style.textDecoration = 'none';
+        link.style.borderRadius = '4px';
+
+        card.appendChild(thumbnail);
+        card.appendChild(title);
+        card.appendChild(description);
+        card.appendChild(link);
+
+        container.appendChild(card);
     });
 }
+
 
 
 
@@ -187,7 +204,7 @@ function generatePDF(schedules) {
 }
 
 function fetchYouTubeVideos(chapterNames) {
-    const apiKey = 'AIzaSyC47RML1jbJa-ULWYU6q_rOpvGZTa2Zzew';  // Use your actual API key
+    const apiKey = 'AIzaSyDzah4IqQ4iveAiK_pUr9OQTKISZ0kkXyM';  // Use your actual API key
     const videoFetchPromises = chapterNames.map(name => {
         const url = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&q=${encodeURIComponent(name)}&part=snippet&type=video&maxResults=1`;
         return fetch(url)
