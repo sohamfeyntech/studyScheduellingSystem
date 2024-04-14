@@ -58,8 +58,13 @@ function distributeChapters(schedules, chapters, dailyStudyMinutes) {
 }
 
 function generatePDF(schedules) {
-    const doc = new jspdf.jsPDF();
-    doc.setFont("helvetica", "bold"); // Set a universal bold font for headings
+    const doc = new jspdf.jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+    });
+
+    doc.setFont("helvetica", "bold");
     const quotes = [
         "The secret of getting ahead is getting started. – Mark Twain",
         "It always seems impossible until it’s done. – Nelson Mandela",
@@ -70,39 +75,50 @@ function generatePDF(schedules) {
 
     schedules.forEach((schedule, dayIndex) => {
         if (dayIndex > 0) doc.addPage();
+
+        // Set a light gray background for each page
+        doc.setFillColor(245, 245, 245); // Light gray
+        doc.rect(0, 0, 210, 297, 'F');
+
+        doc.setTextColor(120, 20, 40); // Deep red
         doc.setFontSize(16);
-        doc.setTextColor(60, 80, 100);
         doc.text(`Day ${dayIndex + 1} Schedule`, 14, 20);
         doc.setFontSize(11);
-        doc.setTextColor(100, 20, 20); // Set text color for motivational quote
+        doc.setTextColor(60, 80, 100); // Dark grey for quote
         doc.text(quotes[dayIndex % quotes.length], 14, 30);
 
-        let yPosition = 40;
-        doc.setFont("courier"); // Use a different font for session details for variety
-        schedule.sessions.forEach(session => {
-            doc.setFontSize(10);
-            doc.setTextColor(0); // Default black text
-            const sessionInfo = `${session.name} - ${session.duration} minutes (${session.type})`;
-            doc.text(sessionInfo, 14, yPosition);
-            yPosition += 10;
-            if (yPosition > 250) {  // Adjust yPosition to ensure space for checklist
-                doc.addPage();
-                yPosition = 10;
+        // Prepare data for the table
+        const bodyRows = schedule.sessions.map(sess => [
+            { content: sess.name, styles: { halign: 'left' } },
+            { content: `${sess.duration} mins`, styles: { halign: 'center' } },
+            { content: sess.type, styles: { halign: 'center' } }
+        ]);
+
+        doc.autoTable({
+            startY: 40,
+            head: [['Session', 'Duration', 'Type']],
+            body: bodyRows,
+            theme: 'grid',
+            styles: { fontSize: 10, font: 'courier' },
+            headStyles: { fillColor: [22, 160, 133], textColor: 255 },
+            columnStyles: {
+                0: { cellWidth: 100 },
+                1: { cellWidth: 45 },
+                2: { cellWidth: 45 }
+            },
+            didDrawPage: function(data) {
+                // Checklist at the bottom
+                doc.setTextColor(40, 120, 180); // Soft blue for checklist header
+                doc.setFontSize(12);
+                doc.text('Today’s Topics Checklist:', 14, data.cursor.y + 10);
+                let checklistY = data.cursor.y + 20;
+                schedule.sessions.forEach(sess => {
+                    doc.setFontSize(10);
+                    doc.setTextColor(80, 80, 80); // Gray text for checklist items
+                    doc.text(`[ ] ${sess.name}`, 14, checklistY);
+                    checklistY += 10;
+                });
             }
-        });
-
-        // Adding a checklist at the bottom of each page
-        let checklistStartY = 260; // Start position for checklist
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 255); // Blue text color for checklist heading
-        doc.text('Today’s Topics Checklist:', 14, checklistStartY);
-        checklistStartY += 10;
-
-        schedule.sessions.forEach(session => {
-            doc.setFontSize(10);
-            doc.setTextColor(0);
-            doc.text(`[ ] ${session.name}`, 14, checklistStartY);
-            checklistStartY += 10;
         });
     });
 
