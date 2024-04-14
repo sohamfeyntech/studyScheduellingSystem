@@ -76,8 +76,7 @@ function generatePDF(schedules) {
     schedules.forEach((schedule, dayIndex) => {
         if (dayIndex > 0) doc.addPage();
 
-        // Set a light gray background for each page
-        doc.setFillColor(245, 245, 245); // Light gray
+        doc.setFillColor(245, 245, 245); // Light gray background
         doc.rect(0, 0, 210, 297, 'F');
 
         doc.setTextColor(120, 20, 40); // Deep red
@@ -87,39 +86,61 @@ function generatePDF(schedules) {
         doc.setTextColor(60, 80, 100); // Dark grey for quote
         doc.text(quotes[dayIndex % quotes.length], 14, 30);
 
-        // Prepare data for the table
-        const bodyRows = schedule.sessions.map(sess => [
-            { content: sess.name, styles: { halign: 'left' } },
-            { content: `${sess.duration} mins`, styles: { halign: 'center' } },
-            { content: sess.type, styles: { halign: 'center' } }
-        ]);
-
+        // Table for each day's schedule
+        const startY = 40;
+        const bodyRows = schedule.sessions.map(sess => [sess.name, `${sess.duration} mins`, sess.type]);
         doc.autoTable({
-            startY: 40,
+            startY: startY,
             head: [['Session', 'Duration', 'Type']],
             body: bodyRows,
             theme: 'grid',
             styles: { fontSize: 10, font: 'courier' },
             headStyles: { fillColor: [22, 160, 133], textColor: 255 },
-            columnStyles: {
-                0: { cellWidth: 100 },
-                1: { cellWidth: 45 },
-                2: { cellWidth: 45 }
-            },
+            columnStyles: { 0: { cellWidth: 100 }, 1: { cellWidth: 45 }, 2: { cellWidth: 45 } },
             didDrawPage: function(data) {
-                // Checklist at the bottom
+                // Add a checklist at the bottom of each page
+                let checklistStartY = data.cursor.y + 10; // Start the checklist a bit below the table
                 doc.setTextColor(40, 120, 180); // Soft blue for checklist header
                 doc.setFontSize(12);
-                doc.text('Today’s Topics Checklist:', 14, data.cursor.y + 10);
-                let checklistY = data.cursor.y + 20;
-                schedule.sessions.forEach(sess => {
+                doc.text('Today’s Topics Checklist:', 14, checklistStartY);
+                checklistStartY += 10;
+
+                schedule.sessions.forEach(session => {
                     doc.setFontSize(10);
-                    doc.setTextColor(80, 80, 80); // Gray text for checklist items
-                    doc.text(`[ ] ${sess.name}`, 14, checklistY);
-                    checklistY += 10;
+                    doc.setTextColor(0); // Black text
+                    doc.text(`[ ] ${session.name}`, 14, checklistStartY);
+                    checklistStartY += 7;
                 });
             }
         });
+    });
+
+    doc.addPage();
+    doc.setTextColor(120, 20, 40); // Deep red
+    doc.setFontSize(16);
+    doc.text("Master Timetable", 14, 20);
+
+    let masterY = 30;
+    let masterRows = [];
+    schedules.forEach((schedule, dayIndex) => {
+        schedule.sessions.forEach(session => {
+            masterRows.push([`Day ${dayIndex + 1}`, session.name, `${session.duration} mins`, session.type]);
+        });
+    });
+
+    doc.autoTable({
+        startY: masterY,
+        head: [['Day', 'Session', 'Duration', 'Type']],
+        body: masterRows,
+        theme: 'grid',
+        styles: { fontSize: 10, font: 'courier' },
+        headStyles: { fillColor: [22, 160, 133], textColor: 255 },
+        columnStyles: {
+            0: { cellWidth: 20 },
+            1: { cellWidth: 85 },
+            2: { cellWidth: 35 },
+            3: { cellWidth: 35 }
+        }
     });
 
     doc.save('StudyTimetable.pdf');
