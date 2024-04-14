@@ -20,20 +20,38 @@ function displayVideos(videos) {
         console.error('YouTube video container not found.');
         return;
     }
-    container.innerHTML = '';  // Clear any previous content
+
+    container.innerHTML = '';  // Clear previous results
 
     videos.forEach(video => {
-        const iframe = document.createElement('iframe');
-        iframe.src = `https://www.youtube.com/embed/${video.id.videoId}`;
-        iframe.width = '560';
-        iframe.height = '315';
-        iframe.style.margin = '10px';
-        iframe.setAttribute('frameborder', '0');
-        iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
-        iframe.setAttribute('allowfullscreen', true);
-        container.appendChild(iframe);
+        if (!video) return;  // Skip if no video data
+
+        const listItem = document.createElement('li');
+        listItem.style.marginBottom = '10px';
+        listItem.style.alignItems = 'center';
+        listItem.style.display = 'flex';
+
+        const thumbnail = document.createElement('img');
+        thumbnail.src = video.snippet.thumbnails.default.url;
+        thumbnail.alt = 'Video Thumbnail';
+        thumbnail.style.width = '120px';
+        thumbnail.style.height = '90px';
+        thumbnail.style.marginRight = '10px';
+
+        const videoLink = document.createElement('a');
+        videoLink.href = `https://www.youtube.com/watch?v=${video.id.videoId}`;
+        videoLink.textContent = video.snippet.title;
+        videoLink.target = '_blank';
+        videoLink.style.textDecoration = 'none';
+        videoLink.style.color = '#333';
+
+        listItem.appendChild(thumbnail);
+        listItem.appendChild(videoLink);
+        container.appendChild(listItem);
     });
 }
+
+
 
 function initializeDailySchedules(days, studyMinutes) {
     return Array.from({ length: days }, () => ({ totalTime: 0, sessions: [] }));
@@ -170,21 +188,24 @@ function generatePDF(schedules) {
 
 function fetchYouTubeVideos(chapterNames) {
     const apiKey = 'AIzaSyC47RML1jbJa-ULWYU6q_rOpvGZTa2Zzew';  // Use your actual API key
-    chapterNames.forEach(name => {
+    const videoFetchPromises = chapterNames.map(name => {
         const url = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&q=${encodeURIComponent(name)}&part=snippet&type=video&maxResults=1`;
-
-        fetch(url)
+        return fetch(url)
             .then(response => response.json())
             .then(data => {
-                console.log(data);  // Log data to see what's received
                 if (data.items && data.items.length) {
-                    displayVideos(data.items);
-                } else {
-                    console.log('No videos found for:', name);
+                    return data.items[0];  // Return the first item for each chapter
                 }
+                return null;  // Return null if no items found
             })
-            .catch(error => console.error('Error fetching YouTube videos:', error));
+            .catch(error => {
+                console.error('Error fetching YouTube videos:', error);
+                return null;  // Return null on error
+            });
+    });
+
+    Promise.all(videoFetchPromises).then(videos => {
+        const validVideos = videos.filter(video => video !== null);  // Filter out null results
+        displayVideos(validVideos);
     });
 }
-
-
