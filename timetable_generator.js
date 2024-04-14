@@ -85,10 +85,24 @@ function generatePDF(schedules) {
             const sessionInfo = `${session.name} - ${session.duration} minutes (${session.type})`;
             doc.text(sessionInfo, 14, yPosition);
             yPosition += 10;
-            if (yPosition > 280) {
+            if (yPosition > 250) {  // Adjust yPosition to ensure space for checklist
                 doc.addPage();
                 yPosition = 10;
             }
+        });
+
+        // Adding a checklist at the bottom of each page
+        let checklistStartY = 260; // Start position for checklist
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 255); // Blue text color for checklist heading
+        doc.text('Today’s Topics Checklist:', 14, checklistStartY);
+        checklistStartY += 10;
+
+        schedule.sessions.forEach(session => {
+            doc.setFontSize(10);
+            doc.setTextColor(0);
+            doc.text(`[ ] ${session.name}`, 14, checklistStartY);
+            checklistStartY += 10;
         });
     });
 
