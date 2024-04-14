@@ -35,6 +35,7 @@ body {
     align-items: center;
     justify-content: center;
     overflow: hidden; 
+    overflow-y: auto;
 }
 
 /* Remove default bullets */
@@ -70,6 +71,10 @@ input[type="checkbox"] + label {
     display: inline-block;
 }
 
+html
+{
+    overflow-y: auto;
+}
 /* Custom checkbox appearance */
 input[type="checkbox"] + label::before {
     content: '';
@@ -326,27 +331,56 @@ input[type="checkbox"]:checked + label::after {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Adds subtle shadow for depth */
     margin-bottom: 20px; /* Adds space below the container */
 }
+input[type="number"], input[type="text"] {
+    width: 300px; /* Adjust width as needed */
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-shadow: inset 0 1px 3px #ddd;
+    font-size: 16px;
+    display: block; /* Makes it easier to manage layout */
+}
+
+#youtubeVideos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));  /* Creates a grid with columns that are at least 280px wide */
+    gap: 20px;  /* Space between grid items */
+    padding: 20px;  /* Padding around the entire grid */
+    width: 100%;  /* Optional: adjust based on layout needs */
+    max-width: 1200px;  /* Optional: limit the width of the grid for large screens */
+    margin: auto;  /* Center the grid horizontally */
+}
+
 .video-card {
     background: white;
-    width: 300px; 
+    height: 180px;  /* Fixed height for rectangular shape */
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    margin-bottom: 20px;
-    transition: transform 0.3s ease;
-
+    transition: transform 0.2s ease;
     display: flex;
     flex-direction: column;
 }
 
 .video-card:hover {
-    transform: translateY(-5px);  
+    transform: scale(1.05);
 }
 
 .video-card img {
-    height: auto; 
+    width: 100%;
+    height: 120px;  /* Adjust height to maintain aspect ratio */
+    object-fit: cover;
 }
 
-.video-card h3, .video-card p {
-    margin: 10px; 
+.video-card h3 {
+    margin: 0;
+    padding: 5px 10px;
+    color: #333;
+    font-size: 16px;
+}
+
+.video-card a {
+    text-decoration: none;
+    color: inherit;  /* Ensures link inherits text color from parent */
 }

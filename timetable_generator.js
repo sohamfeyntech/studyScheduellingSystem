@@ -22,48 +22,40 @@ function displayVideos(videos) {
     }
 
     container.innerHTML = '';  // Clear previous results
-    container.style.display = 'flex';
-    container.style.flexWrap = 'wrap';
-    container.style.justifyContent = 'space-around';
-    container.style.gap = '20px';
 
     videos.forEach(video => {
+        if (!video) return;  // Skip if no video data
+
+        // Create an anchor element that wraps the entire card
+        const videoLink = document.createElement('a');
+        videoLink.href = `https://www.youtube.com/watch?v=${video.id.videoId}`;
+        videoLink.target = '_blank';
+        videoLink.style.textDecoration = 'none';
+        videoLink.style.color = 'inherit'; // Inherit text color from parent
+
+        // Create the card container
         const card = document.createElement('div');
         card.classList.add('video-card');
+        card.style.cursor = 'pointer'; // Indicates the card is clickable
 
+        // Add thumbnail
         const thumbnail = document.createElement('img');
         thumbnail.src = video.snippet.thumbnails.high.url;
         thumbnail.alt = 'Video Thumbnail';
         thumbnail.style.width = '100%';
-        thumbnail.style.borderTopLeftRadius = '8px';
-        thumbnail.style.borderTopRightRadius = '8px';
+        thumbnail.style.height = '60%'; // Adjust based on your design
+        thumbnail.style.objectFit = 'cover'; // Ensures the image covers the designated area
 
+        // Add title
         const title = document.createElement('h3');
         title.textContent = video.snippet.title;
         title.style.padding = '10px';
 
-        const description = document.createElement('p');
-        description.textContent = video.snippet.description.substring(0, 100) + '...'; // Limit description length
-        description.style.padding = '0 10px 10px';
-
-        const link = document.createElement('a');
-        link.href = `https://www.youtube.com/watch?v=${video.id.videoId}`;
-        link.textContent = 'Watch';
-        link.target = '_blank';
-        link.style.display = 'inline-block';
-        link.style.padding = '10px 20px';
-        link.style.margin = '0 10px 10px';
-        link.style.background = '#4285F4';
-        link.style.color = 'white';
-        link.style.textDecoration = 'none';
-        link.style.borderRadius = '4px';
-
+        // Assemble the card
         card.appendChild(thumbnail);
         card.appendChild(title);
-        card.appendChild(description);
-        card.appendChild(link);
-
-        container.appendChild(card);
+        videoLink.appendChild(card);
+        container.appendChild(videoLink);
     });
 }
 
@@ -204,7 +196,7 @@ function generatePDF(schedules) {
 }
 
 function fetchYouTubeVideos(chapterNames) {
-    const apiKey = 'AIzaSyDzah4IqQ4iveAiK_pUr9OQTKISZ0kkXyM';  // Use your actual API key
+    const apiKey = 'AIzaSyA8CbVnNVOUxAlnLp9BkTsGGAQQR0oF7no';  // Use your actual API key
     const videoFetchPromises = chapterNames.map(name => {
         const url = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&q=${encodeURIComponent(name)}&part=snippet&type=video&maxResults=1`;
         return fetch(url)
