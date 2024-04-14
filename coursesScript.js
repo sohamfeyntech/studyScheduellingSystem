@@ -805,6 +805,7 @@ document.addEventListener('DOMContentLoaded', function() {
     submitButton.textContent = 'Submit Selection';
     submitButton.addEventListener('click', handleSubmit);
     container.appendChild(submitButton);
+    
 });
 
 function handleSubmit() {

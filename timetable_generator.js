@@ -11,7 +11,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const schedules = initializeDailySchedules(selectedDays, dailyStudyMinutes);
     distributeChapters(schedules, selectedChapters, dailyStudyMinutes);
     generatePDF(schedules);
+    fetchYouTubeVideos(schedules.map(day => day.sessions.map(session => session.name)).flat());
 });
+
+function displayVideos(videos) {
+    const container = document.getElementById('youtubeVideos');
+    if (!container) {
+        console.error('YouTube video container not found.');
+        return;
+    }
+    container.innerHTML = '';  // Clear any previous content
+
+    videos.forEach(video => {
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://www.youtube.com/embed/${video.id.videoId}`;
+        iframe.width = '560';
+        iframe.height = '315';
+        iframe.style.margin = '10px';
+        iframe.setAttribute('frameborder', '0');
+        iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+        iframe.setAttribute('allowfullscreen', true);
+        container.appendChild(iframe);
+    });
+}
 
 function initializeDailySchedules(days, studyMinutes) {
     return Array.from({ length: days }, () => ({ totalTime: 0, sessions: [] }));
@@ -145,3 +167,24 @@ function generatePDF(schedules) {
 
     doc.save('StudyTimetable.pdf');
 }
+
+function fetchYouTubeVideos(chapterNames) {
+    const apiKey = 'AIzaSyC47RML1jbJa-ULWYU6q_rOpvGZTa2Zzew';  // Use your actual API key
+    chapterNames.forEach(name => {
+        const url = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&q=${encodeURIComponent(name)}&part=snippet&type=video&maxResults=1`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);  // Log data to see what's received
+                if (data.items && data.items.length) {
+                    displayVideos(data.items);
+                } else {
+                    console.log('No videos found for:', name);
+                }
+            })
+            .catch(error => console.error('Error fetching YouTube videos:', error));
+    });
+}
+
+
