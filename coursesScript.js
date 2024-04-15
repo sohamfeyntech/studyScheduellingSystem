@@ -782,8 +782,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const label = document.createElement('label');
             label.setAttribute('for', chapter.name);
-            label.textContent = `${chapter.name} (Difficulty: ${chapter.difficulty})`;
-            
+            // label.textContent = `${chapter.name} (Difficulty: ${chapter.difficulty})`;
+            label.textContent = `${chapter.name} `;
             chapterElement.appendChild(checkbox);
             chapterElement.appendChild(label);
             chaptersContainer.appendChild(chapterElement);
@@ -805,6 +805,7 @@ document.addEventListener('DOMContentLoaded', function() {
     submitButton.textContent = 'Submit Selection';
     submitButton.addEventListener('click', handleSubmit);
     container.appendChild(submitButton);
+    
 });
 
 function handleSubmit() {

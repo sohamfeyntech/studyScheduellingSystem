@@ -1,65 +1,119 @@
 document.addEventListener('DOMContentLoaded', function() {
     const selectedChapters = JSON.parse(localStorage.getItem('selectedChapters')).sort((a, b) => b.difficulty - a.difficulty);
     const selectedDays = parseInt(localStorage.getItem('selectedDays'), 10);
-    const dailyStudyMinutes = parseInt(localStorage.getItem('selectedTime'), 10) * 60; // Correctly placed
+    const dailyStudyMinutes = parseInt(localStorage.getItem('selectedTime'), 10) * 60;
 
-    // Constants for session management
-    const breakDuration = 15; // 15 minutes break after each session
-    const maxSessionLength = 90; // Max study session length in minutes before a long break
-
-    // Validate necessary data
     if (!selectedChapters || !selectedDays || !dailyStudyMinutes) {
         console.error('Missing data. Please ensure all selections are made.');
         return;
     }
 
-    // Initialize daily schedules
-    const dailySchedules = initializeDailySchedules(selectedDays, dailyStudyMinutes);
-
-    // Distribute chapters across daily schedules, passing dailyStudyMinutes as an argument
-    distributeChapters(dailySchedules, selectedChapters, maxSessionLength, dailyStudyMinutes, breakDuration);
-
-    // Generate and download the timetable as a PDF
-    generatePDF(dailySchedules, maxSessionLength, breakDuration);
+    const schedules = initializeDailySchedules(selectedDays, dailyStudyMinutes);
+    distributeChapters(schedules, selectedChapters, dailyStudyMinutes);
+    generatePDF(schedules);
+    fetchYouTubeVideos(schedules.map(day => day.sessions.map(session => session.name)).flat());
 });
+
+function displayVideos(videos) {
+    const container = document.getElementById('youtubeVideos');
+    if (!container) {
+        console.error('YouTube video container not found.');
+        return;
+    }
+
+    container.innerHTML = '';  // Clear previous results
+
+    videos.forEach(video => {
+        if (!video) return;  // Skip if no video data
+
+        // Create an anchor element that wraps the entire card
+        const videoLink = document.createElement('a');
+        videoLink.href = `https://www.youtube.com/watch?v=${video.id.videoId}`;
+        videoLink.target = '_blank';
+        videoLink.style.textDecoration = 'none';
+        videoLink.style.color = 'inherit'; // Inherit text color from parent
+
+        // Create the card container
+        const card = document.createElement('div');
+        card.classList.add('video-card');
+        card.style.cursor = 'pointer'; // Indicates the card is clickable
+
+        // Add thumbnail
+        const thumbnail = document.createElement('img');
+        thumbnail.src = video.snippet.thumbnails.high.url;
+        thumbnail.alt = 'Video Thumbnail';
+        thumbnail.style.width = '100%';
+        thumbnail.style.height = '60%'; // Adjust based on your design
+        thumbnail.style.objectFit = 'cover'; // Ensures the image covers the designated area
+
+        // Add title
+        const title = document.createElement('h3');
+        title.textContent = video.snippet.title;
+        title.style.padding = '10px';
+
+        // Assemble the card
+        card.appendChild(thumbnail);
+        card.appendChild(title);
+        videoLink.appendChild(card);
+        container.appendChild(videoLink);
+    });
+}
+
+
+
 
 function initializeDailySchedules(days, studyMinutes) {
     return Array.from({ length: days }, () => ({ totalTime: 0, sessions: [] }));
 }
 
-function distributeChapters(schedules, chapters, maxSessionLength, dailyStudyMinutes, breakDuration) {
-    let currentTime = 6 * 60; // Start at 6:00 AM
+function calculateChapterTime(difficulty) {
+    const baseTime = 45; // Base time for the simplest subject
+    return baseTime + (difficulty * 15); // Increase time for each level of difficulty
+}
+
+function distributeChapters(schedules, chapters, dailyStudyMinutes) {
+    let dayIndex = 0;
     chapters.forEach(chapter => {
-        const chapterTime = chapter.difficulty * 60; // Convert difficulty to minutes
-        let assigned = false;
+        const chapterTime = calculateChapterTime(chapter.difficulty);
+        const session = {
+            name: chapter.name,
+            duration: chapterTime,
+            difficulty: chapter.difficulty,
+            type: 'Study'
+        };
 
-        for (const schedule of schedules) {
-            if (currentTime + chapterTime <= 23 * 60) { // Ensure chapter ends before 11:00 PM
-                if (schedule.totalTime + chapterTime <= dailyStudyMinutes) {
-                    schedule.sessions.push({ name: chapter.name, duration: Math.min(chapterTime, maxSessionLength), start: currentTime });
-                    schedule.totalTime += chapterTime;
-                    currentTime += chapterTime + breakDuration;
-                    assigned = true;
-                    break;
-                }
-            } else {
-                // Reset currentTime for the next day
-                currentTime = 6 * 60;
-            }
+        // Find a schedule day with enough remaining time
+        while (dayIndex < schedules.length && schedules[dayIndex].totalTime + chapterTime > dailyStudyMinutes) {
+            dayIndex++; // Move to the next day if current day is full
         }
 
-        if (!assigned) {
-            let minDay = schedules.reduce((prev, curr) => prev.totalTime < curr.totalTime ? prev : curr);
-            minDay.sessions.push({ name: chapter.name, duration: Math.min(chapterTime, maxSessionLength), start: currentTime });
-            minDay.totalTime += chapterTime;
-            currentTime += chapterTime + breakDuration;
+        if (dayIndex < schedules.length) {
+            schedules[dayIndex].sessions.push(session);
+            schedules[dayIndex].totalTime += chapterTime;
         }
+    });
+
+    // Add revision sessions at the end of each day based on the sessions of that day
+    schedules.forEach(schedule => {
+        schedule.sessions.forEach(session => {
+            schedule.sessions.push({
+                name: `Revision: ${session.name}`,
+                duration: Math.round(session.duration * 0.5), // Half the duration of the original session
+                difficulty: session.difficulty,
+                type: 'Revision'
+            });
+        });
     });
 }
 
+function generatePDF(schedules) {
+    const doc = new jspdf.jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+    });
 
-function generatePDF(schedules, maxSessionLength, breakDuration) {
-    const doc = new jspdf.jsPDF();
+    doc.setFont("helvetica", "bold");
     const quotes = [
         "The secret of getting ahead is getting started. – Mark Twain",
         "It always seems impossible until it’s done. – Nelson Mandela",
@@ -69,91 +123,98 @@ function generatePDF(schedules, maxSessionLength, breakDuration) {
     ];
 
     schedules.forEach((schedule, dayIndex) => {
-        if (dayIndex > 0) doc.addPage(); // Start each day's schedule on a new page
+        if (dayIndex > 0) doc.addPage();
 
-        // Set a background color for the header
-        doc.setFillColor(224, 235, 255); // Light blue background
-        doc.rect(0, 0, doc.internal.pageSize.getWidth(), 30, 'F');
+        doc.setFillColor(245, 245, 245); // Light gray background
+        doc.rect(0, 0, 210, 297, 'F');
 
-        // Add motivational quote for the day
-        doc.setFontSize(10);
-        doc.setTextColor(60, 80, 100); // Darker grey color for better readability
-        doc.text(quotes[dayIndex % quotes.length], 14, 15);
-
-        // Add a header for each day
-        doc.setFontSize(12);
-        doc.setTextColor(40, 60, 80); // Dark blue color for the text
-        doc.text(`Day ${dayIndex + 1}`, 14, 25);
-
-        let tableData = [];
-        // Generate time slots from 06 AM to 11 PM and map chapters to their respective time slots
-        for (let hour = 6; hour <= 23; hour++) {
-            let timeSlot = {
-                'Time Slot': `${formatTime(hour * 60)} - ${formatTime((hour + 1) * 60)}`,
-                'Chapter': getChapterForTimeSlot(schedule.sessions, hour * 60, (hour + 1) * 60)
-            };
-            tableData.push(timeSlot);
-        }
-
-        // Generate table for the current day with enhanced styles
-        doc.autoTable({
-            head: [['Time Slot', 'Chapter']],
-            body: tableData.map(obj => Object.values(obj)),
-            startY: 35,
-            theme: 'striped',
-            styles: {
-                cellPadding: 3,
-                fontSize: 10,
-                overflow: 'linebreak',
-            },
-            headStyles: {
-                fillColor: [22, 160, 133], // Attractive header color
-                textColor: 255, // White text color
-                fontStyle: 'bold',
-            },
-            alternateRowStyles: {
-                fillColor: [240, 240, 240]
-            },
-        });
-
-        // Add a decorative shape below the table for visual separation
-        doc.setDrawColor(100, 100, 100); // Grey line color
-        doc.line(14, doc.lastAutoTable.finalY + 5, doc.internal.pageSize.getWidth() - 14, doc.lastAutoTable.finalY + 5);
-
-        // Add progress tracking checklist below the table
-        let checklistStartY = doc.lastAutoTable.finalY + 15;
+        doc.setTextColor(120, 20, 40); // Deep red
+        doc.setFontSize(16);
+        doc.text(`Day ${dayIndex + 1} Schedule`, 14, 20);
         doc.setFontSize(11);
-        doc.setTextColor(120, 20, 40); // Red color for checklist title
-        doc.text("Today's Progress Checklist:", 14, checklistStartY);
+        doc.setTextColor(60, 80, 100); // Dark grey for quote
+        doc.text(quotes[dayIndex % quotes.length], 14, 30);
 
-        // Render checkboxes and session names for the checklist
-        schedule.sessions.forEach((session, index) => {
-            let checkboxY = checklistStartY + 7 + (index * 7);
-            doc.rect(14, checkboxY, 4, 4); // Draw checkbox
-            doc.setFontSize(10);
-            doc.setTextColor(50, 50, 50); // Dark grey color for text
-            doc.text(session.name, 20, checkboxY + 3); // Draw text next to checkbox
+        // Table for each day's schedule
+        const startY = 40;
+        const bodyRows = schedule.sessions.map(sess => [sess.name, `${sess.duration} mins`, sess.type]);
+        doc.autoTable({
+            startY: startY,
+            head: [['Session', 'Duration', 'Type']],
+            body: bodyRows,
+            theme: 'grid',
+            styles: { fontSize: 10, font: 'courier' },
+            headStyles: { fillColor: [22, 160, 133], textColor: 255 },
+            columnStyles: { 0: { cellWidth: 100 }, 1: { cellWidth: 45 }, 2: { cellWidth: 45 } },
+            didDrawPage: function(data) {
+                // Add a checklist at the bottom of each page
+                let checklistStartY = data.cursor.y + 10; // Start the checklist a bit below the table
+                doc.setTextColor(40, 120, 180); // Soft blue for checklist header
+                doc.setFontSize(12);
+                doc.text('Today’s Topics Checklist:', 14, checklistStartY);
+                checklistStartY += 10;
+
+                schedule.sessions.forEach(session => {
+                    doc.setFontSize(10);
+                    doc.setTextColor(0); // Black text
+                    doc.text(`[ ] ${session.name}`, 14, checklistStartY);
+                    checklistStartY += 7;
+                });
+            }
         });
+    });
+
+    doc.addPage();
+    doc.setTextColor(120, 20, 40); // Deep red
+    doc.setFontSize(16);
+    doc.text("Master Timetable", 14, 20);
+
+    let masterY = 30;
+    let masterRows = [];
+    schedules.forEach((schedule, dayIndex) => {
+        schedule.sessions.forEach(session => {
+            masterRows.push([`Day ${dayIndex + 1}`, session.name, `${session.duration} mins`, session.type]);
+        });
+    });
+
+    doc.autoTable({
+        startY: masterY,
+        head: [['Day', 'Session', 'Duration', 'Type']],
+        body: masterRows,
+        theme: 'grid',
+        styles: { fontSize: 10, font: 'courier' },
+        headStyles: { fillColor: [22, 160, 133], textColor: 255 },
+        columnStyles: {
+            0: { cellWidth: 20 },
+            1: { cellWidth: 85 },
+            2: { cellWidth: 35 },
+            3: { cellWidth: 35 }
+        }
     });
 
     doc.save('StudyTimetable.pdf');
 }
 
-// Helper function to find a chapter for a given time slot
-function getChapterForTimeSlot(sessions, startTime, endTime) {
-    let chapterName = '';
-    sessions.forEach(session => {
-        if (session.start >= startTime && session.start < endTime) {
-            chapterName = session.name;
-        }
+function fetchYouTubeVideos(chapterNames) {
+    const apiKey = 'AIzaSyCqnfxZdDc3cYI1jWZTNFesFAsYCBalYw8';  // Use your actual API key
+    const videoFetchPromises = chapterNames.map(name => {
+        const url = `https://www.googleapis.com/youtube/v3/search?key=${apiKey}&q=${encodeURIComponent(name)}&part=snippet&type=video&maxResults=1`;
+        return fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.items && data.items.length) {
+                    return data.items[0];  // Return the first item for each chapter
+                }
+                return null;  // Return null if no items found
+            })
+            .catch(error => {
+                console.error('Error fetching YouTube videos:', error);
+                return null;  // Return null on error
+            });
     });
-    return chapterName;
-}
 
-
-
-function formatTime(minutes) {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+    Promise.all(videoFetchPromises).then(videos => {
+        const validVideos = videos.filter(video => video !== null);  // Filter out null results
+        displayVideos(validVideos);
+    });
 }

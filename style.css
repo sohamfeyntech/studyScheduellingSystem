@@ -35,6 +35,7 @@ body {
     align-items: center;
     justify-content: center;
     overflow: hidden; 
+    overflow-y: auto;
 }
 
 /* Remove default bullets */
@@ -70,6 +71,10 @@ input[type="checkbox"] + label {
     display: inline-block;
 }
 
+html
+{
+    overflow-y: auto;
+}
 /* Custom checkbox appearance */
 input[type="checkbox"] + label::before {
     content: '';
@@ -183,6 +188,11 @@ select:hover {
 }
 
 button {
+    padding: 10px 20px;  /* Good padding makes the button easier to interact with */
+    margin-top: 20px;  /* Adds space above the button */
+    margin-bottom: 20px;  /* Adds space below the button */
+    width: auto;  /* Adjust width as necessary, or use 'auto' for automatic width based on content */
+    cursor: pointer;  /* Indicates the button is clickable */
     background-color: black;
     color: #ffffff; 
     font-weight: bold;
@@ -244,6 +254,13 @@ th, td {
 .break-slot {
     background-color: #ea7777;
 }
+#content {
+    display: flex;
+    flex-direction: column;  /* Stack children vertically */
+    align-items: center;  /* Center-align children horizontally */
+    justify-content: center;  /* Optional: Center-align children vertically */
+    width: 100%;  /* Take full width of the container */
+}
 
 .revision-slot {
     background-color: #423fe4;
@@ -256,8 +273,114 @@ th, td {
 }
 
 li {
-    margin: 5px 0;
+    margin: 15px 0;
+}
+
+input[type="checkbox"] {
+    opacity: 0; /* Hides the default checkbox */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+}
+
+input[type="checkbox"] + label::before {
+    content: ''; /* Needed for custom checkbox appearance */
+    position: relative;
+    vertical-align: middle; /* Aligns the pseudo-element with the text */
+    width: 20px;
+    height: 20px;
+    border: 2px solid #333;
+    /* border-radius: 90%; Circular design */
+    margin-right: 10px; /* Space between the custom checkbox and label text */
+    background: #fff;
+}
+
+input[type="checkbox"]:checked + label::before {
+    background: #5cb85c; /* Green background for checked state */
+    border-color: #4cae4c; /* Darker green border */
+}
+
+input[type="checkbox"]:checked + label::after {
+    content: '✔';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    color: white;
+    font-size: 14px;
+}
+.chapter-element {
+    padding: 10px;  /* Adds space inside each chapter container */
+    margin: 10px 0; /* Adds vertical space between chapter containers */
+    background-color: rgba(255, 255, 255, 0.9); /* Light background for each element */
+    border-radius: 5px; /* Rounded corners */
+    display: flex;
+    align-items: center; /* Aligns items vertically in the center */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Subtle shadow for depth */
 }
 
 
+.chapter-element:hover {
+    background-color: rgba(255, 255, 255, 1); /* Fully opaque white on hover */
+}
+.chapters-container {
+    max-height: 300px; /* Limits the height of the container */
+    overflow-y: auto; /* Enables vertical scrolling */
+    border-radius: 8px; /* Optional: rounds the corners */
+    padding: 10px; /* Adds spacing inside the container */
+    background: linear-gradient(to bottom, #000000, #000000); /* Light gradient background */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Adds subtle shadow for depth */
+    margin-bottom: 20px; /* Adds space below the container */
+}
+input[type="number"], input[type="text"] {
+    width: 300px; /* Adjust width as needed */
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-shadow: inset 0 1px 3px #ddd;
+    font-size: 16px;
+    display: block; /* Makes it easier to manage layout */
+}
 
+#youtubeVideos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));  /* Creates a grid with columns that are at least 280px wide */
+    gap: 20px;  /* Space between grid items */
+    /* padding: 20px;  Padding around the entire grid */
+    width: 100%;  /* Optional: adjust based on layout needs */
+    max-width: 1200px;  /* Optional: limit the width of the grid for large screens */
+    margin: auto;  /* Center the grid horizontally */
+}
+
+.video-card {
+    background: white;
+    height: 180px;  /* Fixed height for rectangular shape */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.video-card:hover {
+    transform: scale(1.05);
+}
+
+.video-card img {
+    width: 100%;
+    height: 120px;  /* Adjust height to maintain aspect ratio */
+    object-fit: cover;
+}
+
+.video-card h3 {
+    margin: 0;
+    padding: 5px 10px;
+    color: #333;
+    font-size: 16px;
+}
+
+.video-card a {
+    text-decoration: none;
+    color: inherit;  /* Ensures link inherits text color from parent */
+}
