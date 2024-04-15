@@ -346,7 +346,7 @@ input[type="number"], input[type="text"] {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));  /* Creates a grid with columns that are at least 280px wide */
     gap: 20px;  /* Space between grid items */
-    padding: 20px;  /* Padding around the entire grid */
+    /* padding: 20px;  Padding around the entire grid */
     width: 100%;  /* Optional: adjust based on layout needs */
     max-width: 1200px;  /* Optional: limit the width of the grid for large screens */
     margin: auto;  /* Center the grid horizontally */
